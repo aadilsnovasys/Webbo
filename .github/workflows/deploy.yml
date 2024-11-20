@@ -87,6 +87,11 @@ jobs:
                 $hostname = """"
                 Write-Host "Port $port is available. Proceeding with standard site creation."
             }
+            
+            if (-Not (Test-Path -Path $physicalPath)) {
+                Write-Host "Creating directory: $physicalPath"
+                New-Item -ItemType Directory -Path $physicalPath -Force
+            }
         
             # Check if the IIS site already exists
             $siteExists = Get-Website | Where-Object { $_.Name -eq $projectName }
