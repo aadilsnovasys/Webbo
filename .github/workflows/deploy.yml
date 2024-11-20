@@ -94,9 +94,9 @@ jobs:
             if ($null -eq $siteExists) {
                 Write-Host "Creating new IIS site: $projectName"
                 if ($hostname -ne """") {
-                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -HostHeader $hostname -ApplicationPool ''DefaultAppPool''
+                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -HostHeader $hostname -ApplicationPool 'DefaultAppPool'
                 } else {
-                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -ApplicationPool ''DefaultAppPool''
+                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -ApplicationPool 'DefaultAppPool'
                 }
             } else {
                 Write-Host "IIS site $projectName already exists. Updating physical path."
