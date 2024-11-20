@@ -67,7 +67,7 @@ jobs:
         run: |
             Import-Module WebAdministration
             $projectName = 'Webbo'
-            $physicalPath = 'C:\web\$projectName'
+            $physicalPath = "C:\web\$projectName"
             $port = 80
         
             # Function to generate a unique hostname
