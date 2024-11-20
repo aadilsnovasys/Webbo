@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Builder; // For WebApplication extensions
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -9,18 +11,20 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // The default HSTS value is 30 days. You may want to change this for production scenarios.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 
+// Serve static files from the wwwroot directory.
+app.UseStaticFiles();
+
 app.UseRouting();
 
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
+// Map Razor Pages.
+app.MapRazorPages();
 
 app.Run();
