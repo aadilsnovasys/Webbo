@@ -65,54 +65,52 @@ jobs:
 
       - name: Configure IIS site for Webbo
         run: |
-            Start-Process -FilePath powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "& {
-              Import-Module WebAdministration
-              $projectName = ''Webbo''
-              $physicalPath = ''C:\web\$projectName''
-              $port = 80
+            Import-Module WebAdministration
+            $projectName = ''Webbo''
+            $physicalPath = ''C:\web\$projectName''
+            $port = 80
         
-              # Function to generate a unique hostname
-              function Generate-Hostname {
-                  param([string]$projectName)
-                  return "$($projectName.ToLower()).local"
-              }
+            # Function to generate a unique hostname
+            function Generate-Hostname {
+                param([string]$projectName)
+                return "$($projectName.ToLower()).local"
+            }
         
-              # Check if port 80 is already in use
-              $portInUse = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+            # Check if port 80 is already in use
+            $portInUse = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
         
-              if ($portInUse) {
-                  Write-Host "Port $port is already in use. Creating a new site with a hostname."
-                  $hostname = Generate-Hostname -projectName $projectName
-                  Write-Host "The new hostname will be: $hostname"
-              } else {
-                  $hostname = """"
-                  Write-Host "Port $port is available. Proceeding with standard site creation."
-              }
+            if ($portInUse) {
+                Write-Host "Port $port is already in use. Creating a new site with a hostname."
+                $hostname = Generate-Hostname -projectName $projectName
+                Write-Host "The new hostname will be: $hostname"
+            } else {
+                $hostname = """"
+                Write-Host "Port $port is available. Proceeding with standard site creation."
+            }
         
-              # Check if the IIS site already exists
-              $siteExists = Get-Website | Where-Object { $_.Name -eq $projectName }
+            # Check if the IIS site already exists
+            $siteExists = Get-Website | Where-Object { $_.Name -eq $projectName }
         
-              if ($null -eq $siteExists) {
-                  Write-Host "Creating new IIS site: $projectName"
-                  if ($hostname -ne """") {
-                      New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -HostHeader $hostname -ApplicationPool ''DefaultAppPool''
-                  } else {
-                      New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -ApplicationPool ''DefaultAppPool''
-                  }
-              } else {
-                  Write-Host "IIS site $projectName already exists. Updating physical path."
-                  Set-ItemProperty "IIS:\Sites\$projectName" -Name physicalPath -Value $physicalPath
-              }
+            if ($null -eq $siteExists) {
+                Write-Host "Creating new IIS site: $projectName"
+                if ($hostname -ne """") {
+                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -HostHeader $hostname -ApplicationPool ''DefaultAppPool''
+                } else {
+                    New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -ApplicationPool ''DefaultAppPool''
+                }
+            } else {
+                Write-Host "IIS site $projectName already exists. Updating physical path."
+                Set-ItemProperty "IIS:\Sites\$projectName" -Name physicalPath -Value $physicalPath
+            }
         
-              # Ensure the site is running
-              Start-Website -Name $projectName
+            # Ensure the site is running
+            Start-Website -Name $projectName
         
-              # Output the binding information
-              if ($hostname -ne """") {
-                  Write-Host "Site created successfully with hostname: $hostname"
-              } else {
-                  Write-Host "Site created successfully on port $port without a hostname."
-              }
-            }"' -Verb RunAs
+            # Output the binding information
+            if ($hostname -ne """") {
+                Write-Host "Site created successfully with hostname: $hostname"
+            } else {
+                Write-Host "Site created successfully on port $port without a hostname."
+            }     
         shell: powershell
         
