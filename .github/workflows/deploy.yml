@@ -66,8 +66,8 @@ jobs:
       - name: Configure IIS site for Webbo
         run: |
             Import-Module WebAdministration
-            $projectName = ''Webbo''
-            $physicalPath = ''C:\web\$projectName''
+            $projectName = 'Webbo'
+            $physicalPath = 'C:\web\$projectName'
             $port = 80
         
             # Function to generate a unique hostname
