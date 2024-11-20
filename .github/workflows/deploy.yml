@@ -1,0 +1,116 @@
+name: Build and Deploy .NET Web App
+
+'on':
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.410
+
+      - name: Restore dependencies
+        run: |
+          dotnet restore
+
+      - name: Build .NET project
+        run: |
+          dotnet build --configuration Release
+
+      - name: Publish .NET app
+        run: |
+          dotnet publish --configuration Release --output ./publish
+
+      - name: Archive published app
+        uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: ./publish/
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      # Step 1: Download the published app
+      - name: Download published app
+        uses: actions/download-artifact@v3
+        with:
+          name: app
+          path: ./publish
+
+      # Step 2: List contents of the published app (debugging)
+      - name: List contents of the published app
+        run: |
+          Get-ChildItem -Recurse ./publish
+
+      # Step 3: Create IIS directory for .NET Web App
+      - name: Create IIS directory for Webbo
+        run: |
+          if (!(Test-Path -Path "C:\web\Webbo")) {
+            New-Item -Path "C:\web\Webbo" -ItemType Directory -Force
+          }
+
+      # Step 4: Copy published app to IIS directory
+      - name: Copy published files to IIS directory
+        run: |
+          Copy-Item -Path "./publish/*" -Destination "C:\web\Webbo" -Recurse -Force
+
+      # Step 5: Configure IIS site for Webbo
+      - name: Configure IIS site for Webbo
+        run: |
+          Import-Module WebAdministration
+          $projectName = 'Webbo'
+          $physicalPath = "C:\web\$projectName"
+          $port = 80
+
+          # Function to generate a unique hostname
+          function Generate-Hostname {
+              param([string]$projectName)
+              return "$($projectName.ToLower()).local"
+          }
+
+          # Check if port 80 is already in use
+          $portInUse = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+
+          if ($portInUse) {
+              Write-Host "Port $port is already in use. Creating a new site with a hostname."
+              $hostname = Generate-Hostname -projectName $projectName
+              Write-Host "The new hostname will be: $hostname"
+          } else {
+              $hostname = ""
+              Write-Host "Port $port is available. Proceeding with standard site creation."
+          }
+
+          # Check if the IIS site already exists
+          $siteExists = Get-Website | Where-Object { $_.Name -eq $projectName }
+
+          if ($null -eq $siteExists) {
+              Write-Host "Creating new IIS site: $projectName"
+              if ($hostname -ne "") {
+                  New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -HostHeader $hostname -ApplicationPool 'DefaultAppPool'
+              } else {
+                  New-Website -Name $projectName -PhysicalPath $physicalPath -Port $port -ApplicationPool 'DefaultAppPool'
+              }
+          } else {
+              Write-Host "IIS site $projectName already exists. Updating physical path."
+              Set-ItemProperty "IIS:\Sites\$projectName" -Name physicalPath -Value $physicalPath
+          }
+
+          # Ensure the site is running
+          Start-Website -Name $projectName
+
+          # Output the binding information
+          if ($hostname -ne "") {
+              Write-Host "Site created successfully with hostname: $hostname"
+          } else {
+              Write-Host "Site created successfully on port $port without a hostname."
+          }
+        shell: powershell
